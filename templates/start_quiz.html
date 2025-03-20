@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.chapter.subject.name }} - {{ quiz.chapter.name }} Quiz{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mt-4">{{ quiz.chapter.subject.name }} - {{ quiz.chapter.name }} Quiz</h2>
+    <p><strong>Date:</strong> {{ quiz.date_of_quiz }}</p>
+    <p><strong>Time Duration:</strong> {{ quiz.time_duration }}</p>
+    <hr>
+
+    {% if questions %}
+    <form method="POST">
+        {% for question in questions %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Q{{ loop.index }}: {{ question.question_statement }}</h5>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="1" id="q{{ question.id }}_1">
+                        <label class="form-check-label" for="q{{ question.id }}_1">A: {{ question.option1 }}</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="2" id="q{{ question.id }}_2">
+                        <label class="form-check-label" for="q{{ question.id }}_2">B: {{ question.option2 }}</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="3" id="q{{ question.id }}_3">
+                        <label class="form-check-label" for="q{{ question.id }}_3">C: {{ question.option3 }}</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="4" id="q{{ question.id }}_4">
+                        <label class="form-check-label" for="q{{ question.id }}_4">D: {{ question.option4 }}</label>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        
+        <button type="submit" class="btn btn-success mt-3">Submit Quiz</button>
+    </form>
+    {% else %}
+        <p>No questions available for this quiz.</p>
+    {% endif %}
+</div>
+
+<!-- Styling -->
+<style>
+    .form-check-input {
+        margin-right: 5px;
+    }
+</style>
+
+{% endblock %}

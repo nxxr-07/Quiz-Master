@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mt-4">Quiz Management</h2>
+    <hr>
+
+    <!-- Quiz List Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5>All Quizzes</h5>
+            <button class="btn btn-light btn-sm" onclick="openQuizModal()">+ New Quiz</button>
+        </div>
+        <div class="card-body">
+            {% if quizzes %}
+            <ul class="list-group">
+                {% for quiz in quizzes %}
+                    <li class="list-group-item">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ quiz.chapter.subject.name }} - {{ quiz.chapter.name }} ({{ quiz.date_of_quiz }})</strong>
+                            </div>
+                
+                            <div>
+                                <button class="btn btn-sm btn-secondary" onclick="toggleQuestions('{{ quiz.id }}')">Show</button>
+                                <button class="btn btn-warning btn-sm" onclick="editQuiz({{ quiz.id }})">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteQuiz({{ quiz.id }})">Delete</button>
+                            </div>
+                        </li>
+            
+                        <!-- Questions List (Initially Hidden) -->
+                        <ul id="questions-{{ quiz.id }}" class="list-group question-thread" style="display: none;">
+                            {% for question in quiz.questions %}
+                                <li class="list-group-item question-item">
+                                    <strong>Q{{ loop.index }}:</strong> {{ question.question_statement }}
+                                    <ul>
+                                        <li>A: {{ question.option1 }}</li>
+                                        <li>B: {{ question.option2 }}</li>
+                                        <li>C: {{ question.option3 }}</li>
+                                        <li>D: {{ question.option4 }}</li>
+                                    </ul>
+                                    <small><strong>Correct Answer:</strong> Option {{ question.correct_option }}</small>
+                                    <div>
+                                        <button class="btn btn-warning btn-sm"
+                                            onclick="editQuestion({{ question.id }}, 
+                                                                '{{ question.question_statement }}', 
+                                                                '{{ question.option1 }}', 
+                                                                '{{ question.option2 }}', 
+                                                                '{{ question.option3 }}', 
+                                                                '{{ question.option4 }}', 
+                                                                '{{ question.correct_option }}')">
+                                            Edit
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteQuestion({{ question.id }})">Delete</button>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                            <!-- Add Question Button -->
+                            <li class="list-group-item text-center">
+                                <button class="btn btn-success btn-sm" onclick="openQuestionModal({{ quiz.id }})">+ Question</button>
+                            </li>
+                        </ul>
+                    </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+                <p>No quizzes available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Quiz Modal -->
+<div id="addQuizModal" class="modal">
+    <div class="modal-content">
+        <h2 id="quizModalTitle">Add New Quiz</h2>
+
+        <label for="subject">Select Subject:</label>
+        <select id="subject" name="subject">
+            <option value="">-- Select Subject --</option>
+            {% for subject in subjects %}
+                <option value="{{ subject.id }}">{{ subject.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="chapter">Select Chapter:</label>
+        <select id="chapter" name="chapter">
+            <option value="">-- Select Chapter --</option>
+        </select>
+
+        <label for="date_of_quiz">Quiz Date:</label>
+        <input type="date" id="date_of_quiz" name="date_of_quiz" required>
+
+        <label for="time_duration">Time Duration (HH:MM):</label>
+        <input type="text" id="time_duration" name="time_duration" placeholder="e.g., 01:30" required>
+
+        <label for="remarks">Remarks:</label>
+        <textarea id="remarks" name="remarks"></textarea>
+
+        <input type="hidden" id="quizId">
+
+        <button onclick="saveQuiz()">Save</button>
+        <button onclick="closeModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- Add Question Modal -->
+<div id="addQuestionModal" class="modal">
+    <div class="modal-content">
+        <h2>Add Question</h2>
+
+        <label for="question_statement">Question:</label>
+        <textarea id="question_statement" name="question_statement" required></textarea>
+
+        <label for="option1">Option 1:</label>
+        <input type="text" id="option1" name="option1" required>
+
+        <label for="option2">Option 2:</label>
+        <input type="text" id="option2" name="option2" required>
+
+        <label for="option3">Option 3:</label>
+        <input type="text" id="option3" name="option3" required>
+
+        <label for="option4">Option 4:</label>
+        <input type="text" id="option4" name="option4" required>
+
+        <label for="correct_option">Correct Answer:</label>
+        <select id="correct_option" name="correct_option" required>
+            <option value="1">Option 1</option>
+            <option value="2">Option 2</option>
+            <option value="3">Option 3</option>
+            <option value="4">Option 4</option>
+        </select>
+
+        <input type="hidden" id="quizIdForQuestion">
+
+        <button onclick="saveQuestion()">Save Question</button>
+        <button onclick="closeQuestionModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- Edit Question Modal -->
+<div id="editQuestionModal" class="modal">
+    <div class="modal-content" style="color: black;">
+        <span class="close" onclick="closeEditQuestionModal()">&times;</span>
+        <h4>Edit Question</h4>
+        <form id="editQuestionForm">
+            <input type="hidden" id="editQuestionId" name="question_id">
+            <div class="mb-3">
+                <label for="editQuestionStatement" class="form-label">Question</label>
+                <textarea class="form-control" id="editQuestionStatement" name="question_statement" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label>Options:</label>
+                <input type="text" class="form-control" id="editOption1" name="option1" required placeholder="Option 1">
+                <input type="text" class="form-control" id="editOption2" name="option2" required placeholder="Option 2">
+                <input type="text" class="form-control" id="editOption3" name="option3" required placeholder="Option 3">
+                <input type="text" class="form-control" id="editOption4" name="option4" required placeholder="Option 4">
+            </div>
+            <div class="mb-3">
+                <label for="editCorrectOption" class="form-label">Correct Option (1-4)</label>
+                <input type="number" class="form-control" id="editCorrectOption" name="correct_option" min="1" max="4" required>
+            </div>
+            <button type="submit" class="btn btn-success">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+
+<!-- JavaScript for Modal & AJAX -->
+<script>
+    function toggleQuestions(quizId) {
+        let questionList = document.getElementById("questions-" + quizId);
+        let button = event.target;
+
+        if (questionList.style.display === "none") {
+            questionList.style.display = "block";
+            button.textContent = "Hide";
+        } else {
+            questionList.style.display = "none";
+            button.textContent = "Show";
+        }
+    }
+
+
+    document.getElementById("subject").addEventListener("change", function () {
+        let subjectId = this.value;
+        let chapterDropdown = document.getElementById("chapter");
+
+        // Reset chapter dropdown
+        chapterDropdown.innerHTML = '<option value="">-- Select Chapter --</option>';
+
+        if (subjectId) {
+            fetch(`/get_chapters/${subjectId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.chapters.length > 0) {
+                        data.chapters.forEach(chapter => {
+                            let option = document.createElement("option");
+                            option.value = chapter.id;
+                            option.textContent = chapter.name;
+                            chapterDropdown.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error("Error fetching chapters:", error));
+        }
+    });
+
+    function openQuizModal() {
+        document.getElementById("quizModalTitle").innerText = "Add New Quiz";
+        document.getElementById("quizId").value = "";
+        document.getElementById("subject").value = "";
+        document.getElementById("chapter").innerHTML = '<option value="">-- Select Chapter --</option>';
+        document.getElementById("date_of_quiz").value = "";
+        document.getElementById("time_duration").value = "";
+        document.getElementById("remarks").value = "";
+        document.getElementById("addQuizModal").style.display = "block";
+    }
+
+    function closeModal() {
+        document.getElementById("addQuizModal").style.display = "none";
+    }
+
+    function saveQuiz() {
+        let quizId = document.getElementById("quizId").value;
+        let subjectId = document.getElementById("subject").value;
+        let chapterId = document.getElementById("chapter").value;
+        let dateOfQuiz = document.getElementById("date_of_quiz").value;
+        let timeDuration = document.getElementById("time_duration").value;
+        let remarks = document.getElementById("remarks").value;
+
+        if (!subjectId || !chapterId || !dateOfQuiz || !timeDuration) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+
+        let url = quizId ? `/edit_quiz/${quizId}` : `/add_quiz`;
+        let method = quizId ? "PUT" : "POST";
+
+        fetch(url, {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                chapter_id: chapterId,
+                date_of_quiz: dateOfQuiz,
+                time_duration: timeDuration,
+                remarks: remarks
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            closeModal();
+            location.reload();
+        })
+        .catch(error => console.error("Error:", error));
+    }
+
+    function editQuiz(quizId) {
+        fetch(`/get_quiz/${quizId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("quizModalTitle").innerText = "Edit Quiz";
+                document.getElementById("quizId").value = data.id;
+                document.getElementById("subject").value = data.subject_id;
+
+                // Load chapters dynamically
+                fetch(`/get_chapters/${data.subject_id}`)
+                    .then(response => response.json())
+                    .then(chapters => {
+                        let chapterDropdown = document.getElementById("chapter");
+                        chapterDropdown.innerHTML = '<option value="">-- Select Chapter --</option>';
+                        chapters.chapters.forEach(chapter => {
+                            let option = document.createElement("option");
+                            option.value = chapter.id;
+                            option.textContent = chapter.name;
+                            if (chapter.id == data.chapter_id) option.selected = true;
+                            chapterDropdown.appendChild(option);
+                        });
+                    });
+
+                document.getElementById("date_of_quiz").value = data.date_of_quiz;
+                document.getElementById("time_duration").value = data.time_duration;
+                document.getElementById("remarks").value = data.remarks || "";
+                document.getElementById("addQuizModal").style.display = "block";
+            });
+    }
+
+    function deleteQuiz(quizId) {
+        if (confirm("Are you sure you want to delete this quiz?")) {
+            fetch(`/delete_quiz/${quizId}`, { method: "DELETE" })
+                .then(() => location.reload());
+        }
+    }
+
+
+
+    function openQuestionModal(quizId) {
+        document.getElementById("quizIdForQuestion").value = quizId;
+        document.getElementById("addQuestionModal").style.display = "block";
+    }
+
+    function closeQuestionModal() {
+        document.getElementById("addQuestionModal").style.display = "none";
+    }
+
+    function saveQuestion() {
+        let quizId = document.getElementById("quizIdForQuestion").value;
+        let questionStatement = document.getElementById("question_statement").value;
+        let option1 = document.getElementById("option1").value;
+        let option2 = document.getElementById("option2").value;
+        let option3 = document.getElementById("option3").value;
+        let option4 = document.getElementById("option4").value;
+        let correctOption = document.getElementById("correct_option").value;
+
+        if (!quizId || !questionStatement || !option1 || !option2 || !option3 || !option4 || !correctOption) {
+            alert("Please fill in all fields.");
+            return;
+        }
+
+        fetch("/add_question", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                quiz_id: quizId,
+                question_statement: questionStatement,
+                option1: option1,
+                option2: option2,
+                option3: option3,
+                option4: option4,
+                correct_option: correctOption
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            closeQuestionModal();
+            location.reload();
+        })
+        .catch(error => console.error("Error:", error));
+    }
+
+    // Open Edit Question Modal with Data
+    function editQuestion(questionId, statement, option1, option2, option3, option4, correctOption) {
+        document.getElementById("editQuestionId").value = questionId;
+        document.getElementById("editQuestionStatement").value = statement;
+        document.getElementById("editOption1").value = option1;
+        document.getElementById("editOption2").value = option2;
+        document.getElementById("editOption3").value = option3;
+        document.getElementById("editOption4").value = option4;
+        document.getElementById("editCorrectOption").value = correctOption;
+
+        document.getElementById("editQuestionModal").style.display = "block";
+    }
+
+    // Close Modal
+    function closeEditQuestionModal() {
+        document.getElementById("editQuestionModal").style.display = "none";
+    }
+
+    // Handle Form Submission for Editing
+    document.getElementById("editQuestionForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        let questionId = document.getElementById("editQuestionId").value;
+        let formData = {
+            question_statement: document.getElementById("editQuestionStatement").value,
+            option1: document.getElementById("editOption1").value,
+            option2: document.getElementById("editOption2").value,
+            option3: document.getElementById("editOption3").value,
+            option4: document.getElementById("editOption4").value,
+            correct_option: document.getElementById("editCorrectOption").value
+        };
+
+        fetch(`/edit_question/${questionId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData)
+        }).then(response => {
+            if (response.ok) {
+                location.reload(); // Refresh page to show updated question
+            }
+        });
+    });
+
+    // Delete Question
+    function deleteQuestion(questionId) {
+        if (confirm("Are you sure you want to delete this question?")) {
+            fetch(`/delete_question/${questionId}`, { method: "POST" })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload(); // Refresh page to remove deleted question
+                    }
+                });
+        }
+    }
+
+</script>
+
+
+<!-- Styling for Modals -->
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-content {
+        top: 20%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        color: black;
+        border-radius: 10px;
+        width: 40%;
+    }
+
+    .close {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 24px;
+        cursor: pointer;
+    }
+</style>
+
+{% endblock %}

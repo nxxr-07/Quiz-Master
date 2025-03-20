@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Summary Charts{% endblock %}
+
+{% block styles %}
+<style> 
+    canvas { max-width: 100%; height: auto; } 
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mt-4 text-center">Summary Charts</h2>
+    <hr>
+
+    <div class="row">
+        {% if current_user.is_admin %}
+        <!-- Admin Summary -->
+        <div class="col-md-6">
+            <h4>Subject-wise Top Scores</h4>
+            <canvas id="topScoresChart"></canvas>
+        </div>
+        <div class="col-md-6">
+            <h4>Subject-wise User Attempts</h4>
+            <canvas id="userAttemptsChart"></canvas>
+        </div>
+        {% else %}
+        <!-- User Summary -->
+        <div class="col-md-6">
+            <h4>Subject-wise Most Scores</h4>
+            <canvas id="userScoresChart"></canvas>
+        </div>
+        <div class="col-md-6">
+            <h4>Month-wise Most Quizzes Attempted</h4>
+            <canvas id="monthlyAttemptsChart"></canvas>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Data Variables
+    const isAdmin = {{ current_user.is_admin | tojson }};
+    
+    {% if current_user.is_admin %}
+    const subjectsAdmin = {{ subjects | tojson | safe }};
+    const userScoresAdmin = {{ user_scores | tojson | safe }};
+    const subjectNamesAdmin = {{ subject_names | tojson | safe }};
+    const attemptCountsAdmin = {{ attempt_counts_subject | tojson | safe }};
+    {% else %}
+    const subjectsUser = {{ subjects | tojson | safe }};
+    const userScoresUser = {{ user_scores | tojson | safe }};
+    const monthsUser = {{ months | tojson | safe }};
+    const monthlyAttemptsUser = {{ monthly_attempts | tojson | safe }};
+    {% endif %}
+
+    console.log("Admin:", isAdmin);
+    
+    // Function to Create a Chart
+    function createChart(chartId, chartType, labels, data, labelText) {
+        const ctx = document.getElementById(chartId).getContext('2d');
+        new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: labelText,
+                    data: data,
+                    backgroundColor: ['red', 'green', 'blue', 'yellow', 'purple'],
+                }]
+            },
+            options: { responsive: true }
+        });
+    }
+
+    // Render Charts Based on Role
+    if (isAdmin) {
+        createChart("topScoresChart", "bar", subjectsAdmin, userScoresAdmin, "Top Scores");
+        createChart("userAttemptsChart", "doughnut", subjectNamesAdmin, attemptCountsAdmin, "User Attempts");
+    } else {
+        createChart("userScoresChart", "bar", subjectsUser, userScoresUser, "Your Scores");
+        createChart("monthlyAttemptsChart", "pie", monthsUser, monthlyAttemptsUser, "Quizzes Attempted");
+    }
+</script>
+
+{% endblock %}

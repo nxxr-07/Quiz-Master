@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Master{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mt-4">
+        Welcome, 
+        <span style="color: var(--blue);">{{current_user.full_name}}</span> !
+    </h2>
+    <p class="lead">Select a subject to start a quiz or review your past attempts.</p>
+    <hr>
+
+   <!-- Upcoming Quizzes -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5>Upcoming Quizzes</h5>
+        </div>
+        <div class="card-body">
+            {% if upcoming_quizzes %}
+                <ul class="list-group">
+                    {% for quiz in upcoming_quizzes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>{{ quiz.chapter.subject.name }} - {{ quiz.chapter.name }}</strong>
+                            {% if quiz.date_of_quiz == current_date %}
+                                <a href="{{ url_for('main.start_quiz', quiz_id=quiz.id) }}" class="btn btn-primary btn-sm">Start Quiz</a>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Available on {{ quiz.date_of_quiz }}</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No upcoming quizzes.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Past Quizzes -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5>Past Quizzes</h5>
+        </div>
+        <div class="card-body">
+            {% if past_quizzes %}
+                <ul class="list-group">
+                    {% for entry in past_quizzes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>{{ entry.quiz.chapter.subject.name }} - {{ entry.quiz.chapter.name }}</strong>
+                            {% if entry.attempted %}
+                                <span class="badge bg-success">Attempted on {{ entry.timestamp.strftime('%Y-%m-%d') }}</span>
+                            {% else %}
+                                <span class="badge bg-danger">Missed</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No past quizzes.</p>
+            {% endif %}
+        </div>
+    </div>
+
+
+    <!-- Past Quiz Scores -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5>Your Quiz History</h5>
+        </div>
+        <div class="card-body">
+            {% if scores %}
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Chapter</th>
+                            <th>Score</th>
+                            <th>Attempt Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for score in scores %}
+                            <tr>
+                                <td>{{ score.quiz.chapter.subject.name }}</td>
+                                <td>{{ score.quiz.chapter.name }}</td>
+                                <td>{{ score.total_scored }}</td>
+                                <td>{{ score.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No quiz attempts found. Try a quiz now!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Search - Quiz Master</h2>
+
+    <!-- Search Form -->
+    <form method="POST" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="query" class="form-control" placeholder="Search..." value="{{ request.form.get('query', '') }}" required>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    {% if subjects or chapters or quizzes or (users if current_user.is_admin else false) %}
+        <!-- Subjects -->
+        {% if subjects %}
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">Subjects</div>
+                <ul class="list-group list-group-flush">
+                    {% for subject in subjects %}
+                        <li class="list-group-item">
+                            <strong>{{ subject.name }}</strong>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Chapters -->
+        {% if chapters %}
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">Chapters</div>
+                <ul class="list-group list-group-flush">
+                    {% for chapter in chapters %}
+                        <li class="list-group-item">
+                            <strong>{{ chapter.name }}</strong> ({{ chapter.subject.name }})
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Quizzes -->
+        {% if quizzes %}
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">Quizzes</div>
+                <ul class="list-group list-group-flush">
+                    {% for quiz in quizzes %}
+                        <li class="list-group-item">
+                            <strong>{{ quiz.remarks }}</strong> - <small>{{ quiz.date_of_quiz }}</small>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Users (Only for Admin) -->
+        {% if current_user.is_admin and users %}
+            <div class="card mb-3">
+                <div class="card-header bg-danger text-white">Users</div>
+                <ul class="list-group list-group-flush">
+                    {% for user in users %}
+                        <li class="list-group-item">
+                            <strong>{{ user.full_name }}</strong>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">No results found.</div>
+    {% endif %}
+</div>
+
+{% endblock %}
