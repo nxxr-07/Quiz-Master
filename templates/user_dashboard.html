@@ -81,10 +81,15 @@
                     <tbody>
                         {% for score in scores %}
                             <tr>
-                                <td>{{ score.quiz.chapter.subject.name }}</td>
-                                <td>{{ score.quiz.chapter.name }}</td>
-                                <td>{{ score.total_scored }}</td>
-                                <td>{{ score.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                {% if score.quiz and score.quiz.chapter and score.quiz.chapter.subject %}
+                                    <td>{{ score.quiz.chapter.subject.name }}</td>
+                                    <td>{{ score.quiz.chapter.name }}</td>
+                                    <td>{{ score.total_scored }}%</td>
+                                    <td>{{ score.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                {% else %}
+                                    Deleted Quiz
+                                {% endif %}
+                                
                             </tr>
                         {% endfor %}
                     </tbody>

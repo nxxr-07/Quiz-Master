@@ -25,7 +25,9 @@
                 
                             <div>
                                 <button class="btn btn-sm btn-secondary" onclick="toggleQuestions('{{ quiz.id }}')">Show</button>
+                                {% if quiz.date_of_quiz > today %}
                                 <button class="btn btn-warning btn-sm" onclick="editQuiz({{ quiz.id }})">Edit</button>
+                                {% endif %}
                                 <button class="btn btn-danger btn-sm" onclick="deleteQuiz({{ quiz.id }})">Delete</button>
                             </div>
                         </li>
@@ -43,6 +45,7 @@
                                     </ul>
                                     <small><strong>Correct Answer:</strong> Option {{ question.correct_option }}</small>
                                     <div>
+                                        {% if quiz.date_of_quiz > today %}
                                         <button class="btn btn-warning btn-sm"
                                             onclick="editQuestion({{ question.id }}, 
                                                                 '{{ question.question_statement }}', 
@@ -53,14 +56,20 @@
                                                                 '{{ question.correct_option }}')">
                                             Edit
                                         </button>
+                                        
                                         <button class="btn btn-danger btn-sm" onclick="deleteQuestion({{ question.id }})">Delete</button>
+                                        {% endif %}
                                     </div>
                                 </li>
                             {% endfor %}
+                            {% if quiz.date_of_quiz > today %}
                             <!-- Add Question Button -->
                             <li class="list-group-item text-center">
+                                
                                 <button class="btn btn-success btn-sm" onclick="openQuestionModal({{ quiz.id }})">+ Question</button>
+                                
                             </li>
+                            {% endif %}
                         </ul>
                     </li>
                 {% endfor %}

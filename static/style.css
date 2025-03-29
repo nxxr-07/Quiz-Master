@@ -43,6 +43,30 @@ body{
   overflow: hidden; 
   overflow-y: auto;
 }
+body::-webkit-scrollbar {
+  display: none;
+}
+
+button {
+  background-color: #007aff; /* Apple's blue */
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #005ecb; /* Darker shade of blue */
+  transform: scale(1.05);
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
 .hidden {
     display: none;
 }
@@ -73,9 +97,10 @@ body{
 
 /* Align navbar content */
 .container-fluid {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  width: 100%;
+  background-color: var(--nav-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  z-index: 10;
 }
 
 /* Center navigation links */
@@ -106,6 +131,9 @@ body{
   /* Content */
   .container{
     margin-top: 56px; 
+  }
+  .container-fluid{
+    bac
   }
   .card{
     border: none;

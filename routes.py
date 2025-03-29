@@ -126,55 +126,77 @@ def start_quiz(quiz_id):
             if selected_option and int(selected_option) == question.correct_option:
                 score += 1
 
+        score = score / len(questions) * 100 if questions else 0  # Calculate percentage score
         new_score = Score(user_id=session['user_id'], quiz_id=quiz.id, total_scored=score, timestamp=datetime.now())
         db.session.add(new_score)
         db.session.commit()
         
-        flash(f"You scored {score} out of {len(questions)}!", "success")
+        flash(f"You scored {score} %!", "success")
         return redirect(url_for('main.user_dashboard'))
 
     return render_template('start_quiz.html', quiz=quiz, questions=questions, current_user=current_user)
 
-# ---------------- View Scores ----------------
-@main.route('/scores')
-@login_required
-def view_scores():
-    current_user = get_current_user()
-    scores = Score.query.filter_by(user_id=session['user_id']).all()
-    return render_template('view_scores.html', scores=scores, current_user=current_user)
 
-# ---------------- Summary (user) ----------------
+# ---------------- Summary (Admin + User) ----------------
 @main.route('/summary')
 @login_required
 def summary():
     current_user = get_current_user()
 
-    # **1. Subject-wise Highest Scores**
-    subject_scores = (
-        db.session.query(Subject.name, func.max(Score.total_scored))
-        .join(Quiz, Quiz.id == Score.quiz_id)
-        .join(Chapter, Chapter.id == Quiz.chapter_id)
-        .join(Subject, Subject.id == Chapter.subject_id)
-        .group_by(Subject.name)
-        .all()
-    )
+    # If the user is not an admin, fetch their personal performance data
+    if not current_user.is_admin:
+        # User's highest scores per subject
+        user_subject_scores = (
+            db.session.query(Subject.name, func.max(Score.total_scored))
+            .join(Quiz, Quiz.id == Score.quiz_id)
+            .join(Chapter, Chapter.id == Quiz.chapter_id)
+            .join(Subject, Subject.id == Chapter.subject_id)
+            .filter(Score.user_id == current_user.id)
+            .group_by(Subject.name)
+            .all()
+        )
 
-    subjects = [s[0] for s in subject_scores]  # Subject Names
-    user_scores = [s[1] for s in subject_scores]  # Max Scores
+        # Quizzes attempted by the user in the current month
+        current_month_attempts = (
+            db.session.query(func.count(Score.id))
+            .filter(Score.user_id == current_user.id)
+            .filter(func.strftime('%Y-%m', Score.timestamp) == datetime.now().strftime('%Y-%m'))
+            .scalar() or 0
+        )
 
-    # **2. Month-wise Most Quiz Attempts**
-    monthly_attempts = (
-        db.session.query(func.strftime('%m', Score.timestamp), func.count(Score.id))
-        .group_by(func.strftime('%m', Score.timestamp))
-        .all()
-    )
+        # Total quizzes available in the current month
+        current_month_total_quizzes = (
+            db.session.query(func.count(Quiz.id))
+            .filter(func.strftime('%Y-%m', Quiz.date_of_quiz) == datetime.now().strftime('%Y-%m'))
+            .scalar() or 0
+        )
 
-    months = [m[0] for m in monthly_attempts]  # Months (01, 02, ..., 12)
-    attempt_counts = [m[1] for m in monthly_attempts]  # Number of Attempts
+        # Calculate Not Attempted Quizzes
+        current_month_not_attempted = max(0, current_month_total_quizzes - current_month_attempts)
 
-    # **If Admin, Fetch Additional Data**
-    if current_user.is_admin:
-        # **3. Subject-wise Quiz Attempts**
+        return render_template(
+            "summary.html",
+            current_user=current_user,
+            subjects=[s[0] for s in user_subject_scores],
+            user_scores=[s[1] for s in user_subject_scores],
+            current_month_attempts=current_month_attempts,
+            current_month_not_attempted=current_month_not_attempted,
+            current_month_total_quizzes=current_month_total_quizzes
+        )
+
+    # If the user is an admin, fetch overall performance data
+    else:
+        # Highest scores per subject (best-performing user per subject)
+        subject_highest_scores = (
+            db.session.query(Subject.name, func.max(Score.total_scored))
+            .join(Quiz, Quiz.id == Score.quiz_id)
+            .join(Chapter, Chapter.id == Quiz.chapter_id)
+            .join(Subject, Subject.id == Chapter.subject_id)
+            .group_by(Subject.name)
+            .all()
+        )
+
+        # Total quiz attempts per subject
         subject_attempts = (
             db.session.query(Subject.name, func.count(Score.id))
             .join(Quiz, Quiz.id == Score.quiz_id)
@@ -184,30 +206,26 @@ def summary():
             .all()
         )
 
-        subject_names = [s[0] for s in subject_attempts]  # Subject Names
-        attempt_counts_subject = [s[1] for s in subject_attempts]  # Number of Attempts per Subject
+        # Total user attempts per month (to see user engagement trends)
+        monthly_attempts = (
+            db.session.query(func.strftime('%m-%Y', Score.timestamp), func.count(Score.id))
+            .group_by(func.strftime('%m-%Y', Score.timestamp))
+            .order_by(func.strftime('%Y-%m', Score.timestamp).desc())
+            .all()
+        )
 
         return render_template(
             "summary.html",
             current_user=current_user,
-            subjects=subjects,
-            user_scores=user_scores,
-            months=months,
-            monthly_attempts=attempt_counts,
+            subjects=[s[0] for s in subject_highest_scores],
+            user_scores=[s[1] for s in subject_highest_scores],
             subject_attempts=subject_attempts,
-            subject_names=subject_names,
-            attempt_counts_subject=attempt_counts_subject
+            attempt_counts=[s[1] for s in subject_attempts],
+            subject_names=[s[0] for s in subject_attempts],
+            attempt_counts_subject=[s[1] for s in subject_attempts],
+            months=[m[0] for m in monthly_attempts],
+            monthly_attempts=[m[1] for m in monthly_attempts],
         )
-
-    return render_template(
-        "summary.html",
-        current_user=current_user,
-        subjects=subjects,
-        user_scores=user_scores,
-        months=months,
-        monthly_attempts=attempt_counts,
-    )
-
 
 # ---------------- AJAX Handlers (Admin - Chpaters) ----------------
 @main.route("/get_chapters/<int:subject_id>", methods=["GET"])
@@ -253,8 +271,19 @@ def edit_chapter(chapter_id):
 @main.route("/delete_chapter/<int:chapter_id>", methods=["POST"])
 def delete_chapter(chapter_id):
     chapter = Chapter.query.get_or_404(chapter_id)
-    db.session.delete(chapter)
-    db.session.commit()
+
+    if chapter:
+        quizzes = Quiz.query.filter_by(chapter_id=chapter_id).all() 
+        
+        # Delete all scores related to these quizzes
+        for quiz in quizzes:
+            Score.query.filter_by(quiz_id=quiz.id).delete()
+
+        #Delete all quizzes related to the chapter
+        Quiz.query.filter_by(chapter_id=chapter_id).delete()
+        
+        db.session.delete(chapter)
+        db.session.commit()
 
     return jsonify({"message": "Chapter deleted successfully"})
 
@@ -265,7 +294,9 @@ def quiz_management():
     quizzes = Quiz.query.all()
     subjects = Subject.query.all()
     chapters = Chapter.query.all()
-    return render_template('quiz.html',current_user=current_user, quizzes=quizzes, chapters=chapters, subjects = subjects)
+    today_date = datetime.today().date() 
+
+    return render_template('quiz.html',current_user=current_user, quizzes=quizzes, chapters=chapters, subjects = subjects, today=today_date)
 
 
 
@@ -333,8 +364,13 @@ def edit_quiz(quiz_id):
 @main.route("/delete_quiz/<int:quiz_id>", methods=["DELETE"])
 def delete_quiz(quiz_id):
     quiz = Quiz.query.get_or_404(quiz_id)
-    db.session.delete(quiz)
-    db.session.commit()
+
+    if quiz:
+        Score.query.filter_by(quiz_id=quiz_id).delete()
+        Question.query.filter_by(quiz_id=quiz_id).delete()
+
+        db.session.delete(quiz)
+        db.session.commit()
     return jsonify({"message": "Quiz deleted successfully"}), 200
 
 

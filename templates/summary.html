@@ -4,7 +4,9 @@
 
 {% block styles %}
 <style> 
-    canvas { max-width: 100%; height: auto; } 
+html{
+    height: 100dvh;
+}
 </style>
 {% endblock %}
 
@@ -16,21 +18,21 @@
     <div class="row">
         {% if current_user.is_admin %}
         <!-- Admin Summary -->
-        <div class="col-md-6">
+        <div class="col-md-6" style="max-height: 70dvh;">
             <h4>Subject-wise Top Scores</h4>
             <canvas id="topScoresChart"></canvas>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6" style="max-height: 70dvh;">
             <h4>Subject-wise User Attempts</h4>
             <canvas id="userAttemptsChart"></canvas>
         </div>
         {% else %}
         <!-- User Summary -->
-        <div class="col-md-6">
+        <div class="col-md-6" style="max-height: 70dvh;">
             <h4>Subject-wise Most Scores</h4>
             <canvas id="userScoresChart"></canvas>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6" style="max-height: 70dvh;">
             <h4>Month-wise Most Quizzes Attempted</h4>
             <canvas id="monthlyAttemptsChart"></canvas>
         </div>
@@ -46,15 +48,17 @@
     const isAdmin = {{ current_user.is_admin | tojson }};
     
     {% if current_user.is_admin %}
-    const subjectsAdmin = {{ subjects | tojson | safe }};
-    const userScoresAdmin = {{ user_scores | tojson | safe }};
-    const subjectNamesAdmin = {{ subject_names | tojson | safe }};
-    const attemptCountsAdmin = {{ attempt_counts_subject | tojson | safe }};
+        const subjectsAdmin = {{ subjects | tojson | safe }};
+        const userScoresAdmin = {{ user_scores | tojson | safe }};
+        const subjectNamesAdmin = {{ subject_names | tojson | safe }};
+        const attemptCountsAdmin = {{ attempt_counts | tojson | safe }};
+
     {% else %}
-    const subjectsUser = {{ subjects | tojson | safe }};
-    const userScoresUser = {{ user_scores | tojson | safe }};
-    const monthsUser = {{ months | tojson | safe }};
-    const monthlyAttemptsUser = {{ monthly_attempts | tojson | safe }};
+        const subjectsUser = {{ subjects | tojson | safe }};
+        const userScoresUser = {{ user_scores | tojson | safe }};
+        const currentMonthAttempts = {{ current_month_attempts | tojson }};
+        const currentMonthNotAttempted = {{ current_month_not_attempted | tojson }};
+        const currentMonthTotalQuizzes = {{ current_month_total_quizzes | tojson }};
     {% endif %}
 
     console.log("Admin:", isAdmin);
@@ -82,7 +86,9 @@
         createChart("userAttemptsChart", "doughnut", subjectNamesAdmin, attemptCountsAdmin, "User Attempts");
     } else {
         createChart("userScoresChart", "bar", subjectsUser, userScoresUser, "Your Scores");
-        createChart("monthlyAttemptsChart", "pie", monthsUser, monthlyAttemptsUser, "Quizzes Attempted");
+        createChart("monthlyAttemptsChart", "pie", ["Attempted", "Not Attempted"], 
+                    [currentMonthAttempts, currentMonthNotAttempted], 
+                    "This Month");
     }
 </script>
 
