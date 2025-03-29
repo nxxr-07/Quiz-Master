@@ -110,6 +110,37 @@ def manage_subjects():
     subjects = Subject.query.all()
     return render_template('manage_subjects.html', subjects=subjects, current_user=current_user)
 
+@main.route("/delete_subject/<int:subject_id>", methods=["POST"])
+@login_required
+def delete_subject(subject_id):
+    if session.get("user_role") != "admin":
+        return jsonify({"error": "Unauthorized"}), 403
+
+    subject = Subject.query.get_or_404(subject_id)
+
+    # Get all chapters of the subject
+    chapters = Chapter.query.filter_by(subject_id=subject_id).all()
+
+    for chapter in chapters:
+        quizzes = Quiz.query.filter_by(chapter_id=chapter.id).all()
+
+        for quiz in quizzes:
+            # Delete all scores related to this quiz
+            Score.query.filter_by(quiz_id=quiz.id).delete()
+            # Delete all questions related to this quiz
+            Question.query.filter_by(quiz_id=quiz.id).delete()
+            # Delete the quiz itself
+            db.session.delete(quiz)
+
+        # Delete the chapter itself
+        db.session.delete(chapter)
+
+    # Delete the subject itself
+    db.session.delete(subject)
+    db.session.commit()
+
+    return jsonify({"message": "Subject deleted successfully"}), 200
+
 # ---------------- Start Quiz (User) ----------------
 @main.route('/quiz/<int:quiz_id>', methods=['GET', 'POST'])
 @login_required
