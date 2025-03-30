@@ -168,37 +168,35 @@
     }
 
     function editChapter(chapterId, chapterName) {
-        let newName = prompt("Edit Chapter Name:", chapterName);
-        if (newName) {
-            fetch(`/edit_chapter/${chapterId}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newName })
-            }).then(() => openManageModal(document.getElementById("subjectId").value, document.getElementById("manageModalTitle").innerText));
-        }
-    }
-
-    function deleteChapter(chapterId) {
-        if (confirm("Are you sure you want to delete this chapter?")) {
-            fetch(`/delete_chapter/${chapterId}`, { method: "POST" })
-                .then(() => openManageModal(document.getElementById("subjectId").value, document.getElementById("manageModalTitle").innerText));
-        }
-    }
-
-    document.getElementById("addChapterForm").addEventListener("submit", function (event) {
-        event.preventDefault();
-        let subjectId = document.getElementById("subjectId").value;
-        let chapterName = document.getElementById("chapterName").value;
-
-        fetch(`/add_chapter`, {
+    let newName = prompt("Edit Chapter Name:", chapterName);
+    if (newName) {
+        fetch(`/edit_chapter/${chapterId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ subject_id: subjectId, name: chapterName })
-        }).then(() => {
-            document.getElementById("chapterName").value = "";
-            openManageModal(subjectId, document.getElementById("manageModalTitle").innerText);
-        });
-    });
+            body: JSON.stringify({ name: newName })
+        }).then(() => location.reload()); // Refresh page instead of opening modal
+    }
+}
+
+function deleteChapter(chapterId) {
+    if (confirm("Are you sure you want to delete this chapter?")) {
+        fetch(`/delete_chapter/${chapterId}`, { method: "POST" })
+            .then(() => location.reload()); // Refresh page instead of opening modal
+    }
+}
+
+document.getElementById("addChapterForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+    let subjectId = document.getElementById("subjectId").value;
+    let chapterName = document.getElementById("chapterName").value;
+
+    fetch(`/add_chapter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject_id: subjectId, name: chapterName })
+    }).then(() => location.reload()); // Refresh page instead of opening modal
+});
+
 
     function toggleUsers() {
         let usersList = document.querySelector(".users-list");
