@@ -42,3 +42,20 @@ Quiz Master is a multi-user exam preparation web application built with Flask, J
 - **Score:** `id`, `quiz_id`, `user_id`, `timestamp`, `total_scored`
 
 ---
+
+## Screenshots
+
+> The following screenshots show key features of the Quiz Master application.  
+> _All images are located in the `assess` folder._
+
+### Admin Dashboard
+![Admin Dashboard](assests/admin_dashboard.png)
+
+### User Dashboard
+![User Dashboard](assests/user_dashboard.png)
+
+
+### Summary Charts
+![Summary Charts](assests/summary_charts.png)
+
+---
