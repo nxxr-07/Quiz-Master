@@ -42,17 +42,3 @@ Quiz Master is a multi-user exam preparation web application built with Flask, J
 - **Score:** `id`, `quiz_id`, `user_id`, `timestamp`, `total_scored`
 
 ---
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- pip
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/quiz-master.git
-   cd quiz-master
